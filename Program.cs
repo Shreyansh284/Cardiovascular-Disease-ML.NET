@@ -80,25 +80,69 @@ class Program
         var engine = ml.Model.CreatePredictionEngine<CardioData, CardioPrediction>(loadedModel);
 
         // ✅ 11. Sample Prediction
-        var sample = new CardioData
+
+        Console.WriteLine("\n===== ENTER PATIENT DETAILS =====");
+
+        Console.Write("Age (in days): ");
+        float age = float.Parse(Console.ReadLine());
+
+        Console.Write("Gender (1 = Female, 2 = Male): ");
+        float gender = float.Parse(Console.ReadLine());
+
+        Console.Write("Height (cm): ");
+        float height = float.Parse(Console.ReadLine());
+
+        Console.Write("Weight (kg): ");
+        float weight = float.Parse(Console.ReadLine());
+
+        Console.Write("Systolic BP (ap_hi): ");
+        float ap_hi = float.Parse(Console.ReadLine());
+
+        Console.Write("Diastolic BP (ap_lo): ");
+        float ap_lo = float.Parse(Console.ReadLine());
+
+        Console.Write("Cholesterol (1 = normal, 2 = above normal, 3 = well above normal): ");
+        float cholesterol = float.Parse(Console.ReadLine());
+
+        Console.Write("Glucose (1 = normal, 2 = above normal, 3 = well above normal): ");
+        float gluc = float.Parse(Console.ReadLine());
+
+        Console.Write("Smoker? (1 = Yes, 0 = No): ");
+        float smoke = float.Parse(Console.ReadLine());
+
+        Console.Write("Alcohol intake? (1 = Yes, 0 = No): ");
+        float alco = float.Parse(Console.ReadLine());
+
+        Console.Write("Physically Active? (1 = Yes, 0 = No): ");
+        float active = float.Parse(Console.ReadLine());
+
+        // ✅ Create Input Object
+        var input = new CardioData
         {
-            age = 20000,
-            gender = 1,
-            height = 165,
-            weight = 72,
-            ap_hi = 140,
-            ap_lo = 90,
-            cholesterol = 2,
-            gluc = 1,
-            smoke = 0,
-            alco = 0,
-            active = 1
+            age = age,
+            gender = gender,
+            height = height,
+            weight = weight,
+            ap_hi = ap_hi,
+            ap_lo = ap_lo,
+            cholesterol = cholesterol,
+            gluc = gluc,
+            smoke = smoke,
+            alco = alco,
+            active = active
         };
 
-        var result = engine.Predict(sample);
+        // ✅ Predict
+        var result = engine.Predict(input);
 
-        Console.WriteLine("\n====== FINAL PREDICTION ======");
-        Console.WriteLine($"Has Disease? {result.Prediction}");
+        Console.WriteLine("\n===== PREDICTION RESULT =====");
+        Console.WriteLine($"Has Cardiovascular Disease? : {result.Prediction}");
         Console.WriteLine($"Probability: {result.Probability}");
+
+        if (result.Prediction)
+            Console.WriteLine("⚠️ High Risk: Medical check-up recommended.");
+        else
+            Console.WriteLine("✅ Low Risk: No immediate concern.");
     }
 }
+
