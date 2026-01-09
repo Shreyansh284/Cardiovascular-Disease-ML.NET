@@ -1,38 +1,59 @@
 ﻿using Microsoft.ML;
 using Microsoft.ML.Data;
 using System;
+using System.IO;
 
 class Program
 {
+    public class AgeInput
+    {
+        public float age { get; set; }
+    }
+
+    public class AgeOutput
+    {
+        public float age_years { get; set; }
+    }
+
     static void Main()
     {
         var ml = new MLContext(seed: 1);
 
-        // ✅ 1. Load Data
+        // Load Data
         var data = ml.Data.LoadFromTextFile<CardioData>(
             path: "D:\\DotNet\\cardiovascular-disease\\Data\\cardio_train.csv",
             hasHeader: true,
             separatorChar: ';');
 
-        // ✅ 2. Outlier Filtering (Medical Cleaning)
+        // Outlier Filtering (Medical Cleaning)
         var cleanedData = ml.Data.FilterRowsByColumn(data, nameof(CardioData.ap_hi), 70, 250);
         cleanedData = ml.Data.FilterRowsByColumn(cleanedData, nameof(CardioData.ap_lo), 40, 150);
         cleanedData = ml.Data.FilterRowsByColumn(cleanedData, nameof(CardioData.weight), 30, 200);
 
-        // ✅ 3. Train/Test Split
+        // Train/Test Split
         var split = ml.Data.TrainTestSplit(cleanedData, testFraction: 0.2);
 
-        // ✅ 4. Full Preprocessing + Training Pipeline
+        string modelPath = "cardio_model.zip";
+        ITransformer model;
+
+        Console.WriteLine("Training new model...");
+
+        // Full Preprocessing + Training Pipeline
         var pipeline =
             ml.Transforms.ReplaceMissingValues(nameof(CardioData.weight))
-            .Append(ml.Transforms.NormalizeMinMax(nameof(CardioData.age)))
+            // Convert Age (days) to Age (years) - REMOVED, using age (days) directly as it is normalized anyway
+            //.Append(ml.Transforms.CustomMapping<AgeInput, AgeOutput>(
+            //    (input, output) => output.age_years = input.age / 365f, 
+            //    "AgeMapping"))
+            //.Append(ml.Transforms.NormalizeMinMax("age_years"))
+            .Append(ml.Transforms.NormalizeMinMax(nameof(CardioData.age))) // Normalize age (days)
             .Append(ml.Transforms.NormalizeMinMax(nameof(CardioData.height)))
             .Append(ml.Transforms.NormalizeMinMax(nameof(CardioData.weight)))
             .Append(ml.Transforms.NormalizeMinMax(nameof(CardioData.ap_hi)))
             .Append(ml.Transforms.NormalizeMinMax(nameof(CardioData.ap_lo)))
 
             .Append(ml.Transforms.Concatenate("Features",
-                nameof(CardioData.age),
+                nameof(CardioData.age), // Use age (days)
                 nameof(CardioData.gender),
                 nameof(CardioData.height),
                 nameof(CardioData.weight),
@@ -47,10 +68,20 @@ class Program
 
             .Append(ml.BinaryClassification.Trainers.FastTree());
 
-        // ✅ 5. Train Model
-        var model = pipeline.Fit(split.TrainSet);
+        // Train Model
+        model = pipeline.Fit(split.TrainSet);
 
-        // ✅ 6. Evaluate Model
+        // Cross Validation
+        var cvResults = ml.BinaryClassification.CrossValidate(cleanedData, pipeline, numberOfFolds: 5);
+        Console.WriteLine("\nCross Validation Accuracies:");
+        foreach (var r in cvResults)
+            Console.WriteLine(r.Metrics.Accuracy);
+
+        // Save Model
+        ml.Model.Save(model, split.TrainSet.Schema, modelPath);
+        Console.WriteLine($"\nModel saved as {modelPath}");
+
+        // Evaluate Model
         var predictions = model.Transform(split.TestSet);
         var metrics = ml.BinaryClassification.Evaluate(predictions);
 
@@ -63,28 +94,16 @@ class Program
         Console.WriteLine("\nConfusion Matrix:");
         Console.WriteLine(metrics.ConfusionMatrix.GetFormattedConfusionTable());
 
-        // ✅ 7. Cross Validation
-        var cvResults = ml.BinaryClassification.CrossValidate(cleanedData, pipeline, numberOfFolds: 5);
-        Console.WriteLine("\nCross Validation Accuracies:");
-        foreach (var r in cvResults)
-            Console.WriteLine(r.Metrics.Accuracy);
+        //  Prediction Engine
+        var engine = ml.Model.CreatePredictionEngine<CardioData, CardioPrediction>(model);
 
-        // ✅ 8. Save Model
-        ml.Model.Save(model, split.TrainSet.Schema, "cardio_model.zip");
-        Console.WriteLine("\nModel saved as cardio_model.zip");
-
-        // ✅ 9. Load Model
-        var loadedModel = ml.Model.Load("cardio_model.zip", out var schema);
-
-        // ✅ 10. Prediction Engine
-        var engine = ml.Model.CreatePredictionEngine<CardioData, CardioPrediction>(loadedModel);
-
-        // ✅ 11. Sample Prediction
+        //  Sample Prediction
 
         Console.WriteLine("\n===== ENTER PATIENT DETAILS =====");
 
-        Console.Write("Age (in days): ");
-        float age = float.Parse(Console.ReadLine());
+        Console.Write("Age (in years): ");
+        float ageYears = float.Parse(Console.ReadLine());
+        float age = ageYears * 365f; // Convert back to days for the CardioData input object
 
         Console.Write("Gender (1 = Female, 2 = Male): ");
         float gender = float.Parse(Console.ReadLine());
@@ -116,7 +135,7 @@ class Program
         Console.Write("Physically Active? (1 = Yes, 0 = No): ");
         float active = float.Parse(Console.ReadLine());
 
-        // ✅ Create Input Object
+        // ate Input Object
         var input = new CardioData
         {
             age = age,
@@ -132,7 +151,7 @@ class Program
             active = active
         };
 
-        // ✅ Predict
+        // dict
         var result = engine.Predict(input);
 
         Console.WriteLine("\n===== PREDICTION RESULT =====");
@@ -142,7 +161,7 @@ class Program
         if (result.Prediction)
             Console.WriteLine("⚠️ High Risk: Medical check-up recommended.");
         else
-            Console.WriteLine("✅ Low Risk: No immediate concern.");
+            Console.WriteLine(" Risk: No immediate concern.");
     }
 }
 
