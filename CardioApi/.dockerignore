@@ -1,0 +1,9 @@
+**/.dockerignore
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/out
+**/.vscode
+**/.vs
+cardio_train.csv
