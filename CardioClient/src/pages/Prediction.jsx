@@ -1,7 +1,13 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Activity, ArrowRight, Loader2 } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Loader2,
+  Info,
+  CheckCircle2,
+} from "lucide-react";
 import { predictHeartDisease } from "../services/api";
 
 const Prediction = () => {
@@ -11,17 +17,19 @@ const Prediction = () => {
 
   const [formData, setFormData] = useState({
     ageYears: "",
-    gender: "1", // Default 2 (Male) or 1 (Female) based on dataset usually? Let's check CSV. 1 women, 2 men usually in this dataset. I will use radio buttons.
+    gender: "1",
     height: "",
     weight: "",
     apHi: "",
     apLo: "",
-    cholesterol: "1", // 1: normal, 2: above normal, 3: well above normal
+    cholesterol: "1",
     gluc: "1",
     smoke: "0",
     alco: "0",
     active: "1",
   });
+
+  const [activeSegment, setActiveSegment] = useState(1);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,21 +41,17 @@ const Prediction = () => {
     setLoading(true);
     setError(null);
 
-    // Basic validation
-    if (
-      !formData.ageYears ||
-      !formData.height ||
-      !formData.weight ||
-      !formData.apHi ||
-      !formData.apLo
-    ) {
-      setError("Please fill in all required fields.");
+    // Validation for all fields before AI submittal
+    const required = ["ageYears", "height", "weight", "apHi", "apLo"];
+    const missing = required.filter(field => !formData[field]);
+
+    if (missing.length > 0) {
+      setError("Clinical parameters incomplete. Please provide all physiological metrics.");
       setLoading(false);
       return;
     }
 
     try {
-      // Convert types
       const payload = {
         ageYears: parseFloat(formData.ageYears),
         gender: parseFloat(formData.gender),
@@ -63,229 +67,252 @@ const Prediction = () => {
       };
 
       const result = await predictHeartDisease(payload);
-
-      // Navigate to result
       navigate("/result", { state: { result, input: payload } });
     } catch (err) {
-      console.error(err);
-      setError(
-        "Failed to get prediction from server. Please ensure the API is running."
-      );
+      setError("AI Engine Communication Failure. Please verify your connection.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white dark:bg-slate-950 pt-32 pb-24 transition-colors duration-500 relative">
+      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_100%_0%,rgba(225,29,72,0.03),transparent)] pointer-events-none"></div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-4xl mx-auto"
+        className="max-w-4xl mx-auto px-4 relative z-10"
       >
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-slate-900">
-            Patient Health Profile
+        <div className="text-center mb-12">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="inline-flex items-center gap-2 mb-4 bg-health-50 dark:bg-health-500/10 px-4 py-1.5 rounded-full text-health-600 dark:text-health-500 font-black text-[10px] uppercase tracking-widest border border-health-100 dark:border-health-900/30"
+          >
+            <Activity size={12} />
+            Diagnostic Engine Active
+          </motion.div>
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic leading-none">
+            Cardiac <span className="text-health-600">Scan</span>
           </h2>
-          <p className="mt-2 text-slate-600">
-            Enter your health metrics for a comprehensive assessment.
-          </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-3xl shadow-xl overflow-hidden"
+          className="bg-white dark:bg-slate-900 rounded-[32px] shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-800"
         >
-          <div className="p-8 md:p-12 space-y-8">
-            {/* Section 1: Personal Info */}
-            <div>
-              <h3 className="text-lg font-semibold text-health-700 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-health-100 flex items-center justify-center text-health-600 text-sm">
-                  1
-                </span>
-                Personal Details
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <InputField
-                  label="Age (Years)"
-                  name="ageYears"
-                  type="number"
-                  value={formData.ageYears}
-                  onChange={handleChange}
-                  placeholder="e.g. 45"
-                />
+          <div className="grid md:grid-cols-12">
+            {/* Sidebar Navigation */}
+            <div className="md:col-span-4 bg-slate-50 dark:bg-slate-950 p-8 border-r border-slate-100 dark:border-slate-800 space-y-6">
+              <StepIndicator 
+                active={activeSegment === 1} 
+                number="01" 
+                title="Baseline" 
+                desc="Physical Metrics"
+                onClick={() => setActiveSegment(1)}
+              />
+              <StepIndicator 
+                active={activeSegment === 2} 
+                number="02" 
+                title="Clinical" 
+                desc="Blood Vitals"
+                onClick={() => setActiveSegment(2)}
+              />
+              <StepIndicator 
+                active={activeSegment === 3} 
+                number="03" 
+                title="Behavior" 
+                desc="Lifestyle Habits"
+                onClick={() => setActiveSegment(3)}
+              />
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Gender
-                  </label>
-                  <div className="flex gap-4">
-                    <label
-                      className={`flex-1 border rounded-xl p-3 cursor-pointer transition-all ${
-                        formData.gender === "1"
-                          ? "border-health-500 bg-health-50 text-health-700"
-                          : "border-slate-200 hover:border-health-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="1"
-                        checked={formData.gender === "1"}
-                        onChange={handleChange}
-                        className="sr-only"
-                      />
-                      <div className="text-center">Female</div>
-                    </label>
-                    <label
-                      className={`flex-1 border rounded-xl p-3 cursor-pointer transition-all ${
-                        formData.gender === "2"
-                          ? "border-health-500 bg-health-50 text-health-700"
-                          : "border-slate-200 hover:border-health-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="2"
-                        checked={formData.gender === "2"}
-                        onChange={handleChange}
-                        className="sr-only"
-                      />
-                      <div className="text-center">Male</div>
-                    </label>
+              <div className="pt-12">
+                <div className="p-6 bg-slate-900 rounded-3xl text-white">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 className="text-health-500 w-4 h-4" />
+                    <span className="font-black text-[10px] uppercase tracking-widest">Privacy Guard</span>
                   </div>
+                  <p className="text-[10px] text-slate-400 font-bold leading-relaxed italic">
+                    Binary processing only. No inputs are persisted to disk.
+                  </p>
                 </div>
-
-                <InputField
-                  label="Height (cm)"
-                  name="height"
-                  type="number"
-                  value={formData.height}
-                  onChange={handleChange}
-                  placeholder="e.g. 175"
-                />
-                <InputField
-                  label="Weight (kg)"
-                  name="weight"
-                  type="number"
-                  value={formData.weight}
-                  onChange={handleChange}
-                  placeholder="e.g. 70"
-                />
               </div>
             </div>
 
-            <hr className="border-slate-100" />
-
-            {/* Section 2: Vitals */}
-            <div>
-              <h3 className="text-lg font-semibold text-health-700 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-health-100 flex items-center justify-center text-health-600 text-sm">
-                  2
-                </span>
-                Medical Vitals
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <InputField
-                  label="Systolic BP (High)"
-                  name="apHi"
-                  type="number"
-                  value={formData.apHi}
-                  onChange={handleChange}
-                  placeholder="e.g. 120"
-                />
-                <InputField
-                  label="Diastolic BP (Low)"
-                  name="apLo"
-                  type="number"
-                  value={formData.apLo}
-                  onChange={handleChange}
-                  placeholder="e.g. 80"
-                />
-
-                <SelectField
-                  label="Cholesterol"
-                  name="cholesterol"
-                  value={formData.cholesterol}
-                  onChange={handleChange}
-                  options={[
-                    { value: "1", label: "Normal" },
-                    { value: "2", label: "Above Normal" },
-                    { value: "3", label: "Well Above Normal" },
-                  ]}
-                />
-                <SelectField
-                  label="Glucose"
-                  name="gluc"
-                  value={formData.gluc}
-                  onChange={handleChange}
-                  options={[
-                    { value: "1", label: "Normal" },
-                    { value: "2", label: "Above Normal" },
-                    { value: "3", label: "Well Above Normal" },
-                  ]}
-                />
-              </div>
-            </div>
-
-            <hr className="border-slate-100" />
-
-            {/* Section 3: Lifestyle */}
-            <div>
-              <h3 className="text-lg font-semibold text-health-700 mb-4 flex items-center gap-2">
-                <span className="w-8 h-8 rounded-full bg-health-100 flex items-center justify-center text-health-600 text-sm">
-                  3
-                </span>
-                Lifestyle Habits
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <ToggleCard
-                  label="Smoking"
-                  name="smoke"
-                  value={formData.smoke}
-                  onChange={handleChange}
-                />
-                <ToggleCard
-                  label="Alcohol Intake"
-                  name="alco"
-                  value={formData.alco}
-                  onChange={handleChange}
-                />
-                <ToggleCard
-                  label="Physical Activity"
-                  name="active"
-                  value={formData.active}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                {error}
-              </div>
-            )}
-
-            <div className="pt-4 flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-4 bg-health-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-health-700 disabled:opacity-70 disabled:cursor-not-allowed transition-all flex items-center gap-3 w-full md:w-auto justify-center"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    Analyze Risk Profile
-                    <ArrowRight className="w-5 h-5" />
-                  </>
+            {/* Form Content */}
+            <div className="md:col-span-8 p-8 md:p-10 flex flex-col justify-between min-h-[450px]">
+              <AnimatePresence mode="wait">
+                {activeSegment === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="grid grid-cols-2 gap-4"
+                  >
+                    <InputField
+                      label="Patient Age"
+                      name="ageYears"
+                      type="number"
+                      suffix="yrs"
+                      value={formData.ageYears}
+                      onChange={handleChange}
+                      placeholder="Age"
+                    />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">
+                        Sex
+                      </label>
+                      <div className="flex bg-slate-50 dark:bg-slate-950 p-1 rounded-xl gap-1">
+                        <GenderButton
+                          active={formData.gender === "1"}
+                          onClick={() => setFormData(p => ({ ...p, gender: "1" }))}
+                          label="Female"
+                        />
+                        <GenderButton
+                          active={formData.gender === "2"}
+                          onClick={() => setFormData(p => ({ ...p, gender: "2" }))}
+                          label="Male"
+                        />
+                      </div>
+                    </div>
+                    <InputField
+                      label="Height"
+                      name="height"
+                      type="number"
+                      suffix="cm"
+                      value={formData.height}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Weight"
+                      name="weight"
+                      type="number"
+                      suffix="kg"
+                      value={formData.weight}
+                      onChange={handleChange}
+                    />
+                  </motion.div>
                 )}
-              </button>
+
+                {activeSegment === 2 && (
+                  <motion.div
+                    key="step2"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="grid grid-cols-2 gap-4"
+                  >
+                    <InputField label="Systolic (Hi)" name="apHi" type="number" suffix="mmHg" value={formData.apHi} onChange={handleChange} />
+                    <InputField label="Diastolic (Lo)" name="apLo" type="number" suffix="mmHg" value={formData.apLo} onChange={handleChange} />
+                    <SelectField
+                      label="Cholesterol"
+                      name="cholesterol"
+                      value={formData.cholesterol}
+                      onChange={handleChange}
+                      options={[
+                        { value: "1", label: "Normal" },
+                        { value: "2", label: "Elevated" },
+                        { value: "3", label: "Critical" },
+                      ]}
+                    />
+                    <SelectField
+                      label="Glucose"
+                      name="gluc"
+                      value={formData.gluc}
+                      onChange={handleChange}
+                      options={[
+                        { value: "1", label: "Normal" },
+                        { value: "2", label: "Borderline" },
+                        { value: "3", label: "High" },
+                      ]}
+                    />
+                  </motion.div>
+                )}
+
+                {activeSegment === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="space-y-4"
+                  >
+                    <HabitToggle
+                      label="Tobacco Use"
+                      active={formData.smoke === "1"}
+                      onClick={() => setFormData(p => ({ ...p, smoke: p.smoke === "1" ? "0" : "1" }))}
+                      desc="Active or history of smoking"
+                    />
+                    <HabitToggle
+                      label="Alcohol"
+                      active={formData.alco === "1"}
+                      onClick={() => setFormData(p => ({ ...p, alco: p.alco === "1" ? "0" : "1" }))}
+                      desc="Regular consumption"
+                    />
+                    <HabitToggle
+                      label="Physical Activity"
+                      active={formData.active === "1"}
+                      onClick={() => setFormData(p => ({ ...p, active: p.active === "1" ? "0" : "1" }))}
+                      desc="30+ mins regular exercise"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="mt-10 space-y-6">
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-2xl text-xs font-black italic flex items-center gap-3"
+                  >
+                    <Activity size={14} />
+                    {error}
+                  </motion.div>
+                )}
+
+                <div className="flex gap-3">
+                  {activeSegment > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveSegment(s => s - 1)}
+                      className="px-6 py-4 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl font-black text-xs transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                    >
+                      Back
+                    </button>
+                  )}
+                  {activeSegment < 3 ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveSegment(s => s + 1)}
+                      className="flex-1 py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
+                    >
+                      Continue
+                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-4 bg-health-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-health-900/20 hover:bg-health-500 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="animate-spin w-4 h-4" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          Run Diagnostic
+                          <Activity size={16} />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </form>
@@ -293,27 +320,95 @@ const Prediction = () => {
     </div>
   );
 };
+//                       <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+//                     </button>
+//                   ) : (
+//                     <button
+//                       type="submit"
+//                       disabled={loading}
+//                       className="flex-1 py-6 bg-health-600 text-white rounded-[28px] font-black text-xl shadow-xl shadow-health-900/40 hover:bg-health-500 transition-all disabled:opacity-50 flex items-center justify-center gap-4"
+//                     >
+//                       {loading ? (
+//                         <>
+//                           <Loader2 className="animate-spin" />
+//                           Analyzing Dataset...
+//                         </>
+//                       ) : (
+//                         <>
+//                           Run Diagnostic Neural Network
+//                           <Activity size={20} />
+//                         </>
+//                       )}
+//                     </button>
+//                   )}
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </form>
+//       </motion.div>
+//     </div>
+//   );
+// };
 
-const InputField = ({ label, type = "text", ...props }) => (
+const StepIndicator = ({ number, title, desc, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full text-left group outline-none"
+  >
+    <div className="flex items-center gap-4">
+      <div className={`text-2xl font-black italic tracking-tighter transition-all duration-500 ${
+        active ? "text-health-600 scale-105" : "text-slate-200 dark:text-slate-800"
+      }`}>
+        {number}
+      </div>
+      <div>
+        <h4 className={`text-base font-black tracking-tight leading-none transition-colors ${
+          active ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-600"
+        }`}>
+          {title}
+        </h4>
+        <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 transition-colors ${
+          active ? "text-health-500" : "text-slate-300 dark:text-slate-700"
+        }`}>
+          {desc}
+        </p>
+      </div>
+    </div>
+  </button>
+);
+
+const InputField = ({ label, suffix, ...props }) => (
   <div className="space-y-2">
-    <label className="block text-sm font-medium text-slate-700">{label}</label>
-    <input
-      type={type}
-      {...props}
-      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-health-500 focus:ring-4 focus:ring-health-500/10 outline-none transition-all placeholder:text-slate-400"
-    />
+    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">
+      {label}
+    </label>
+    <div className="relative group">
+      <input
+        {...props}
+        className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl py-3 px-5 focus:bg-white dark:focus:bg-slate-900 focus:border-health-400 dark:focus:border-health-500 focus:ring-0 outline-none transition-all font-black text-lg text-slate-900 dark:text-white placeholder:text-slate-200 dark:placeholder:text-slate-800"
+      />
+      {suffix && (
+        <span className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-700 font-bold text-xs pointer-events-none group-focus-within:text-health-500 italic">
+          {suffix}
+        </span>
+      )}
+    </div>
   </div>
 );
 
 const SelectField = ({ label, options, ...props }) => (
   <div className="space-y-2">
-    <label className="block text-sm font-medium text-slate-700">{label}</label>
+    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 ml-1">
+      {label}
+    </label>
     <select
       {...props}
-      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-health-500 focus:ring-4 focus:ring-health-500/10 outline-none transition-all bg-white"
+      className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl py-3 px-5 focus:bg-white dark:focus:bg-slate-900 focus:border-health-400 dark:focus:border-health-500 outline-none transition-all font-black text-sm text-slate-900 dark:text-white appearance-none cursor-pointer"
     >
       {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
+        <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-900">
           {opt.label}
         </option>
       ))}
@@ -321,50 +416,46 @@ const SelectField = ({ label, options, ...props }) => (
   </div>
 );
 
-const ToggleCard = ({ label, name, value, onChange }) => {
-  const isChecked = value === "1";
-  return (
-    <label
-      className={`
-            flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all
-            ${
-              isChecked
-                ? "bg-health-50 border-health-300"
-                : "bg-white border-slate-200 hover:border-health-200"
-            }
-        `}
+const GenderButton = ({ active, onClick, label }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+      active
+        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md"
+        : "text-slate-400 dark:text-slate-600 hover:text-slate-600"
+    }`}
+  >
+    {label}
+  </button>
+);
+
+const HabitToggle = ({ active, label, desc, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`w-full p-6 rounded-3xl border-2 flex items-center gap-6 transition-all duration-300 text-left ${
+      active
+        ? "bg-slate-900 dark:bg-health-950/20 border-slate-900 dark:border-health-500 shadow-xl"
+        : "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-200 dark:hover:border-slate-700 shadow-inner"
+    }`}
+  >
+    <div
+      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
+        active ? "bg-health-600 text-white rotate-6 scale-105" : "bg-white dark:bg-slate-900 text-slate-200 dark:text-slate-800"
+      }`}
     >
-      <span
-        className={`font-medium ${
-          isChecked ? "text-health-800" : "text-slate-600"
-        }`}
-      >
+      <CheckCircle2 size={18} />
+    </div>
+    <div>
+      <h4 className={`text-lg font-black tracking-tight leading-none ${active ? "text-white" : "text-slate-900 dark:text-slate-300"}`}>
         {label}
-      </span>
-      <div
-        className={`
-                w-12 h-6 rounded-full p-1 transition-colors relative
-                ${isChecked ? "bg-health-500" : "bg-slate-300"}
-            `}
-      >
-        <div
-          className={`
-                    w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200
-                    ${isChecked ? "translate-x-6" : "translate-x-0"}
-                `}
-        ></div>
-      </div>
-      <input
-        type="checkbox"
-        name={name}
-        checked={isChecked}
-        onChange={(e) =>
-          onChange({ target: { name, value: e.target.checked ? "1" : "0" } })
-        }
-        className="hidden"
-      />
-    </label>
-  );
-};
+      </h4>
+      <p className={`text-[10px] font-bold mt-1.5 ${active ? "text-health-200" : "text-slate-400 dark:text-slate-600"}`}>
+        {desc}
+      </p>
+    </div>
+  </button>
+);
 
 export default Prediction;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -34,10 +34,28 @@ const AnimatedRoutes = () => {
 };
 
 function App() {
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark" ||
+      (!("theme" in localStorage) &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)
+  );
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
-        <Header />
+      <div className="flex flex-col min-h-screen transition-colors duration-300 dark:bg-slate-950">
+        <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         <main className="flex-grow">
           <AnimatedRoutes />
         </main>
