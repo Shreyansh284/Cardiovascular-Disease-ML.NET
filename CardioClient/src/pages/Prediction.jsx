@@ -17,19 +17,41 @@ const Prediction = () => {
 
   const [formData, setFormData] = useState({
     ageYears: "",
-    gender: "1",
+    gender: "",
     height: "",
     weight: "",
     apHi: "",
     apLo: "",
-    cholesterol: "1",
-    gluc: "1",
-    smoke: "0",
-    alco: "0",
-    active: "1",
+    cholesterol: "",
+    gluc: "",
+    smoke: "",
+    alco: "",
+    active: "",
   });
 
   const [activeSegment, setActiveSegment] = useState(1);
+
+  const isSegmentValid = (segment) => {
+    if (segment === 1) {
+      return (
+        formData.ageYears &&
+        formData.gender &&
+        formData.height &&
+        formData.weight
+      );
+    }
+    if (segment === 2) {
+      return (
+        formData.apHi && formData.apLo && formData.cholesterol && formData.gluc
+      );
+    }
+    if (segment === 3) {
+      return (
+        formData.smoke !== "" && formData.alco !== "" && formData.active !== ""
+      );
+    }
+    return true;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -42,11 +64,25 @@ const Prediction = () => {
     setError(null);
 
     // Validation for all fields before AI submittal
-    const required = ["ageYears", "height", "weight", "apHi", "apLo"];
-    const missing = required.filter(field => !formData[field]);
+    const required = [
+      "ageYears",
+      "height",
+      "weight",
+      "apHi",
+      "apLo",
+      "gender",
+      "cholesterol",
+      "gluc",
+      "smoke",
+      "alco",
+      "active",
+    ];
+    const missing = required.filter((field) => !formData[field]);
 
     if (missing.length > 0) {
-      setError("Clinical parameters incomplete. Please provide all physiological metrics.");
+      setError(
+        "Clinical parameters incomplete. Please provide all physiological metrics."
+      );
       setLoading(false);
       return;
     }
@@ -69,7 +105,9 @@ const Prediction = () => {
       const result = await predictHeartDisease(payload);
       navigate("/result", { state: { result, input: payload } });
     } catch (err) {
-      setError("AI Engine Communication Failure. Please verify your connection.");
+      setError(
+        "AI Engine Communication Failure. Please verify your connection."
+      );
     } finally {
       setLoading(false);
     }
@@ -85,7 +123,7 @@ const Prediction = () => {
         className="max-w-4xl mx-auto px-4 relative z-10"
       >
         <div className="text-center mb-12">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="inline-flex items-center gap-2 mb-4 bg-health-50 dark:bg-health-500/10 px-4 py-1.5 rounded-full text-health-600 dark:text-health-500 font-black text-[10px] uppercase tracking-widest border border-health-100 dark:border-health-900/30"
@@ -100,38 +138,47 @@ const Prediction = () => {
 
         <form
           onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.preventDefault();
+          }}
           className="bg-white dark:bg-slate-900 rounded-[32px] shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-800"
         >
           <div className="grid md:grid-cols-12">
             {/* Sidebar Navigation */}
             <div className="md:col-span-4 bg-slate-50 dark:bg-slate-950 p-8 border-r border-slate-100 dark:border-slate-800 space-y-6">
-              <StepIndicator 
-                active={activeSegment === 1} 
-                number="01" 
-                title="Baseline" 
+              <StepIndicator
+                active={activeSegment === 1}
+                number="01"
+                title="Baseline"
                 desc="Physical Metrics"
                 onClick={() => setActiveSegment(1)}
               />
-              <StepIndicator 
-                active={activeSegment === 2} 
-                number="02" 
-                title="Clinical" 
+              <StepIndicator
+                active={activeSegment === 2}
+                number="02"
+                title="Clinical"
                 desc="Blood Vitals"
-                onClick={() => setActiveSegment(2)}
+                disabled={!isSegmentValid(1)}
+                onClick={() => isSegmentValid(1) && setActiveSegment(2)}
               />
-              <StepIndicator 
-                active={activeSegment === 3} 
-                number="03" 
-                title="Behavior" 
+              <StepIndicator
+                active={activeSegment === 3}
+                number="03"
+                title="Behavior"
                 desc="Lifestyle Habits"
-                onClick={() => setActiveSegment(3)}
+                disabled={!isSegmentValid(1) || !isSegmentValid(2)}
+                onClick={() =>
+                  isSegmentValid(1) && isSegmentValid(2) && setActiveSegment(3)
+                }
               />
 
               <div className="pt-12">
                 <div className="p-6 bg-slate-900 rounded-3xl text-white">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle2 className="text-health-500 w-4 h-4" />
-                    <span className="font-black text-[10px] uppercase tracking-widest">Privacy Guard</span>
+                    <span className="font-black text-[10px] uppercase tracking-widest">
+                      Privacy Guard
+                    </span>
                   </div>
                   <p className="text-[10px] text-slate-400 font-bold leading-relaxed italic">
                     Binary processing only. No inputs are persisted to disk.
@@ -167,12 +214,16 @@ const Prediction = () => {
                       <div className="flex bg-slate-50 dark:bg-slate-950 p-1 rounded-xl gap-1">
                         <GenderButton
                           active={formData.gender === "1"}
-                          onClick={() => setFormData(p => ({ ...p, gender: "1" }))}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, gender: "1" }))
+                          }
                           label="Female"
                         />
                         <GenderButton
                           active={formData.gender === "2"}
-                          onClick={() => setFormData(p => ({ ...p, gender: "2" }))}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, gender: "2" }))
+                          }
                           label="Male"
                         />
                       </div>
@@ -204,8 +255,22 @@ const Prediction = () => {
                     exit={{ opacity: 0, x: -10 }}
                     className="grid grid-cols-2 gap-4"
                   >
-                    <InputField label="Systolic (Hi)" name="apHi" type="number" suffix="mmHg" value={formData.apHi} onChange={handleChange} />
-                    <InputField label="Diastolic (Lo)" name="apLo" type="number" suffix="mmHg" value={formData.apLo} onChange={handleChange} />
+                    <InputField
+                      label="Systolic (Hi)"
+                      name="apHi"
+                      type="number"
+                      suffix="mmHg"
+                      value={formData.apHi}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Diastolic (Lo)"
+                      name="apLo"
+                      type="number"
+                      suffix="mmHg"
+                      value={formData.apLo}
+                      onChange={handleChange}
+                    />
                     <SelectField
                       label="Cholesterol"
                       name="cholesterol"
@@ -242,19 +307,34 @@ const Prediction = () => {
                     <HabitToggle
                       label="Tobacco Use"
                       active={formData.smoke === "1"}
-                      onClick={() => setFormData(p => ({ ...p, smoke: p.smoke === "1" ? "0" : "1" }))}
+                      onClick={() =>
+                        setFormData((p) => ({
+                          ...p,
+                          smoke: p.smoke === "1" ? "0" : "1",
+                        }))
+                      }
                       desc="Active or history of smoking"
                     />
                     <HabitToggle
                       label="Alcohol"
                       active={formData.alco === "1"}
-                      onClick={() => setFormData(p => ({ ...p, alco: p.alco === "1" ? "0" : "1" }))}
+                      onClick={() =>
+                        setFormData((p) => ({
+                          ...p,
+                          alco: p.alco === "1" ? "0" : "1",
+                        }))
+                      }
                       desc="Regular consumption"
                     />
                     <HabitToggle
                       label="Physical Activity"
                       active={formData.active === "1"}
-                      onClick={() => setFormData(p => ({ ...p, active: p.active === "1" ? "0" : "1" }))}
+                      onClick={() =>
+                        setFormData((p) => ({
+                          ...p,
+                          active: p.active === "1" ? "0" : "1",
+                        }))
+                      }
                       desc="30+ mins regular exercise"
                     />
                   </motion.div>
@@ -263,7 +343,7 @@ const Prediction = () => {
 
               <div className="mt-10 space-y-6">
                 {error && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-2xl text-xs font-black italic flex items-center gap-3"
@@ -277,7 +357,7 @@ const Prediction = () => {
                   {activeSegment > 1 && (
                     <button
                       type="button"
-                      onClick={() => setActiveSegment(s => s - 1)}
+                      onClick={() => setActiveSegment((s) => s - 1)}
                       className="px-6 py-4 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl font-black text-xs transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
                     >
                       Back
@@ -286,16 +366,20 @@ const Prediction = () => {
                   {activeSegment < 3 ? (
                     <button
                       type="button"
-                      onClick={() => setActiveSegment(s => s + 1)}
-                      className="flex-1 py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
+                      disabled={!isSegmentValid(activeSegment)}
+                      onClick={() => setActiveSegment((s) => s + 1)}
+                      className="flex-1 py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black text-sm shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:hover:translate-y-0"
                     >
                       Continue
-                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight
+                        size={16}
+                        className="group-hover:translate-x-1 transition-transform"
+                      />
                     </button>
                   ) : (
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || !isSegmentValid(3)}
                       className="flex-1 py-4 bg-health-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-health-900/20 hover:bg-health-500 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                     >
                       {loading ? (
@@ -305,7 +389,7 @@ const Prediction = () => {
                         </>
                       ) : (
                         <>
-                          Run Diagnostic
+                          Analyze
                           <Activity size={16} />
                         </>
                       )}
@@ -351,27 +435,40 @@ const Prediction = () => {
 //   );
 // };
 
-const StepIndicator = ({ number, title, desc, active, onClick }) => (
+const StepIndicator = ({ number, title, desc, active, onClick, disabled }) => (
   <button
     type="button"
     onClick={onClick}
-    className="w-full text-left group outline-none"
+    disabled={disabled}
+    className={`w-full text-left group outline-none ${
+      disabled ? "opacity-50 cursor-not-allowed" : ""
+    }`}
   >
     <div className="flex items-center gap-4">
-      <div className={`text-2xl font-black italic tracking-tighter transition-all duration-500 ${
-        active ? "text-health-600 scale-105" : "text-slate-200 dark:text-slate-800"
-      }`}>
+      <div
+        className={`text-2xl font-black italic tracking-tighter transition-all duration-500 ${
+          active
+            ? "text-health-600 scale-105"
+            : "text-slate-200 dark:text-slate-800"
+        }`}
+      >
         {number}
       </div>
       <div>
-        <h4 className={`text-base font-black tracking-tight leading-none transition-colors ${
-          active ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-600"
-        }`}>
+        <h4
+          className={`text-base font-black tracking-tight leading-none transition-colors ${
+            active
+              ? "text-slate-900 dark:text-white"
+              : "text-slate-400 dark:text-slate-600"
+          }`}
+        >
           {title}
         </h4>
-        <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 transition-colors ${
-          active ? "text-health-500" : "text-slate-300 dark:text-slate-700"
-        }`}>
+        <p
+          className={`text-[9px] font-bold uppercase tracking-widest mt-1 transition-colors ${
+            active ? "text-health-500" : "text-slate-300 dark:text-slate-700"
+          }`}
+        >
           {desc}
         </p>
       </div>
@@ -407,8 +504,15 @@ const SelectField = ({ label, options, ...props }) => (
       {...props}
       className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl py-3 px-5 focus:bg-white dark:focus:bg-slate-900 focus:border-health-400 dark:focus:border-health-500 outline-none transition-all font-black text-sm text-slate-900 dark:text-white appearance-none cursor-pointer"
     >
+      <option value="" disabled>
+        Select {label}
+      </option>
       {options.map((opt) => (
-        <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-900">
+        <option
+          key={opt.value}
+          value={opt.value}
+          className="bg-white dark:bg-slate-900"
+        >
           {opt.label}
         </option>
       ))}
@@ -442,16 +546,26 @@ const HabitToggle = ({ active, label, desc, onClick }) => (
   >
     <div
       className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
-        active ? "bg-health-600 text-white rotate-6 scale-105" : "bg-white dark:bg-slate-900 text-slate-200 dark:text-slate-800"
+        active
+          ? "bg-health-600 text-white rotate-6 scale-105"
+          : "bg-white dark:bg-slate-900 text-slate-200 dark:text-slate-800"
       }`}
     >
       <CheckCircle2 size={18} />
     </div>
     <div>
-      <h4 className={`text-lg font-black tracking-tight leading-none ${active ? "text-white" : "text-slate-900 dark:text-slate-300"}`}>
+      <h4
+        className={`text-lg font-black tracking-tight leading-none ${
+          active ? "text-white" : "text-slate-900 dark:text-slate-300"
+        }`}
+      >
         {label}
       </h4>
-      <p className={`text-[10px] font-bold mt-1.5 ${active ? "text-health-200" : "text-slate-400 dark:text-slate-600"}`}>
+      <p
+        className={`text-[10px] font-bold mt-1.5 ${
+          active ? "text-health-200" : "text-slate-400 dark:text-slate-600"
+        }`}
+      >
         {desc}
       </p>
     </div>
