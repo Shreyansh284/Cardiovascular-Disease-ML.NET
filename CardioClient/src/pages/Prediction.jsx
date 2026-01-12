@@ -24,9 +24,9 @@ const Prediction = () => {
     apLo: "",
     cholesterol: "",
     gluc: "",
-    smoke: "",
-    alco: "",
-    active: "",
+    smoke: null,
+    alco: null,
+    active: null,
   });
 
   const [activeSegment, setActiveSegment] = useState(1);
@@ -47,7 +47,7 @@ const Prediction = () => {
     }
     if (segment === 3) {
       return (
-        formData.smoke !== "" && formData.alco !== "" && formData.active !== ""
+        formData.smoke !== null && formData.alco !== null && formData.active !== null
       );
     }
     return true;
@@ -212,14 +212,14 @@ const Prediction = () => {
                         Sex
                       </label>
                       <div className="flex bg-slate-50 dark:bg-slate-950 p-1 rounded-xl gap-1">
-                        <GenderButton
+                        <SelectionButton
                           active={formData.gender === "1"}
                           onClick={() =>
                             setFormData((p) => ({ ...p, gender: "1" }))
                           }
                           label="Female"
                         />
-                        <GenderButton
+                        <SelectionButton
                           active={formData.gender === "2"}
                           onClick={() =>
                             setFormData((p) => ({ ...p, gender: "2" }))
@@ -235,6 +235,7 @@ const Prediction = () => {
                       suffix="cm"
                       value={formData.height}
                       onChange={handleChange}
+                      placeholder="Height in cm"
                     />
                     <InputField
                       label="Weight"
@@ -243,6 +244,7 @@ const Prediction = () => {
                       suffix="kg"
                       value={formData.weight}
                       onChange={handleChange}
+                      placeholder="Weight in kg"
                     />
                   </motion.div>
                 )}
@@ -262,6 +264,7 @@ const Prediction = () => {
                       suffix="mmHg"
                       value={formData.apHi}
                       onChange={handleChange}
+                      placeholder="e.g. 120"
                     />
                     <InputField
                       label="Diastolic (Lo)"
@@ -270,6 +273,7 @@ const Prediction = () => {
                       suffix="mmHg"
                       value={formData.apLo}
                       onChange={handleChange}
+                      placeholder="e.g. 80"
                     />
                     <SelectField
                       label="Cholesterol"
@@ -302,41 +306,88 @@ const Prediction = () => {
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
-                    className="space-y-4"
+                    className="space-y-6"
                   >
-                    <HabitToggle
-                      label="Tobacco Use"
-                      active={formData.smoke === "1"}
-                      onClick={() =>
-                        setFormData((p) => ({
-                          ...p,
-                          smoke: p.smoke === "1" ? "0" : "1",
-                        }))
-                      }
-                      desc="Active or history of smoking"
-                    />
-                    <HabitToggle
-                      label="Alcohol"
-                      active={formData.alco === "1"}
-                      onClick={() =>
-                        setFormData((p) => ({
-                          ...p,
-                          alco: p.alco === "1" ? "0" : "1",
-                        }))
-                      }
-                      desc="Regular consumption"
-                    />
-                    <HabitToggle
-                      label="Physical Activity"
-                      active={formData.active === "1"}
-                      onClick={() =>
-                        setFormData((p) => ({
-                          ...p,
-                          active: p.active === "1" ? "0" : "1",
-                        }))
-                      }
-                      desc="30+ mins regular exercise"
-                    />
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-end ml-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Tobacco Use
+                        </label>
+                        <span className="text-[9px] font-bold text-slate-300 dark:text-slate-700 italic">
+                          Active or history of smoking
+                        </span>
+                      </div>
+                      <div className="flex bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl gap-1.5 border border-slate-100 dark:border-slate-800">
+                        <SelectionButton
+                          active={formData.smoke === "1"}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, smoke: "1" }))
+                          }
+                          label="Yes"
+                        />
+                        <SelectionButton
+                          active={formData.smoke === "0"}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, smoke: "0" }))
+                          }
+                          label="No"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-end ml-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Alcohol Consumption
+                        </label>
+                        <span className="text-[9px] font-bold text-slate-300 dark:text-slate-700 italic">
+                          Regular consumption
+                        </span>
+                      </div>
+                      <div className="flex bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl gap-1.5 border border-slate-100 dark:border-slate-800">
+                        <SelectionButton
+                          active={formData.alco === "1"}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, alco: "1" }))
+                          }
+                          label="Yes"
+                        />
+                        <SelectionButton
+                          active={formData.alco === "0"}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, alco: "0" }))
+                          }
+                          label="No"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-end ml-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Physical Activity
+                        </label>
+                        <span className="text-[9px] font-bold text-slate-300 dark:text-slate-700 italic">
+                          30+ mins regular exercise
+                        </span>
+                      </div>
+                      <div className="flex bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl gap-1.5 border border-slate-100 dark:border-slate-800">
+                        <SelectionButton
+                          active={formData.active === "1"}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, active: "1" }))
+                          }
+                          label="Yes"
+                        />
+                        <SelectionButton
+                          active={formData.active === "0"}
+                          onClick={() =>
+                            setFormData((p) => ({ ...p, active: "0" }))
+                          }
+                          label="No"
+                        />
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -484,7 +535,7 @@ const InputField = ({ label, suffix, ...props }) => (
     <div className="relative group">
       <input
         {...props}
-        className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl py-3 px-5 focus:bg-white dark:focus:bg-slate-900 focus:border-health-400 dark:focus:border-health-500 focus:ring-0 outline-none transition-all font-black text-lg text-slate-900 dark:text-white placeholder:text-slate-200 dark:placeholder:text-slate-800"
+        className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl py-3 px-5 focus:bg-white dark:focus:bg-slate-900 focus:border-health-400 dark:focus:border-health-500 focus:ring-0 outline-none transition-all font-black text-lg text-slate-900 dark:text-white placeholder:text-slate-200 dark:placeholder:text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {suffix && (
         <span className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-700 font-bold text-xs pointer-events-none group-focus-within:text-health-500 italic">
@@ -520,55 +571,17 @@ const SelectField = ({ label, options, ...props }) => (
   </div>
 );
 
-const GenderButton = ({ active, onClick, label }) => (
+const SelectionButton = ({ active, onClick, label }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+    className={`flex-1 py-3.5 rounded-[14px] font-black text-[10px] uppercase tracking-widest transition-all duration-300 ${
       active
-        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md"
-        : "text-slate-400 dark:text-slate-600 hover:text-slate-600"
-    }`}
+        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md border-slate-200 dark:border-slate-700"
+        : "text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 border-transparent"
+    } border`}
   >
     {label}
-  </button>
-);
-
-const HabitToggle = ({ active, label, desc, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`w-full p-6 rounded-3xl border-2 flex items-center gap-6 transition-all duration-300 text-left ${
-      active
-        ? "bg-slate-900 dark:bg-health-950/20 border-slate-900 dark:border-health-500 shadow-xl"
-        : "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-200 dark:hover:border-slate-700 shadow-inner"
-    }`}
-  >
-    <div
-      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
-        active
-          ? "bg-health-600 text-white rotate-6 scale-105"
-          : "bg-white dark:bg-slate-900 text-slate-200 dark:text-slate-800"
-      }`}
-    >
-      <CheckCircle2 size={18} />
-    </div>
-    <div>
-      <h4
-        className={`text-lg font-black tracking-tight leading-none ${
-          active ? "text-white" : "text-slate-900 dark:text-slate-300"
-        }`}
-      >
-        {label}
-      </h4>
-      <p
-        className={`text-[10px] font-bold mt-1.5 ${
-          active ? "text-health-200" : "text-slate-400 dark:text-slate-600"
-        }`}
-      >
-        {desc}
-      </p>
-    </div>
   </button>
 );
 

@@ -16,6 +16,17 @@ body {
   width: 100%;
 }
 
+/* Hide number input arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .hero-gradient {
     background: rgb(255,241,242);
     background: radial-gradient(circle, rgba(255,241,242,1) 0%, rgba(255,255,255,1) 100%);
